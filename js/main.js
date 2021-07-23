@@ -23,129 +23,195 @@ menuButton.addEventListener('click', function () {
 })
 */
 
-
 const getElement = (tagName, classNames, attributes) => {
-	const element = document.createElement(tagName);
+   const element = document.createElement(tagName);
 
-	if(classNames) {
-		element.classList.add(...classNames);
-	}
+   if (classNames) {
+      element.classList.add(...classNames);
+   }
 
-	if(attributes) {
-		for(const attribute in attributes) {
-			element[attribute] = attributes[attribute]
-		}
-	}
+   if (attributes) {
+      for (const attribute in attributes) {
+         element[attribute] = attributes[attribute];
+      }
+   }
 
-	return element;
+   return element;
 };
 
-
 const createHeader = (param) => {
-	const header = getElement('header');
-	const container = getElement('div', ['container']);
-	const wrapper = getElement('div', ['header']);
+   const header = getElement('header');
+   const container = getElement('div', ['container']);
+   const wrapper = getElement('div', ['header']);
 
+   if (param.header.logo) {
+      const logo = getElement('img', ['logo'], {
+         src: param.header.logo,
+         alt: 'Логотип ' + param.title,
+      });
+      wrapper.append(logo);
+   }
 
-	if(param.header.logo) {
-		const logo = getElement('img', ['logo'], {
-			src: param.header.logo,
-			slt: 'Логотип ' + param.title,
-		});
-		wrapper.append(logo);
-	}
+   if (param.header.menu) {
+      const menuWrapper = getElement('nav', ['menu-list']);
+      const allMenuLink = param.header.menu.map((item) => {
+         const menuLink = getElement('a', ['menu-link']);
+         menuLink.textContent = item.title;
+         menuLink.href = item.link;
 
-	if(param.header.menu) {
-		const menuWrapper = getElement('nav', ['menu-list']);
-		const allMenu = param.header.menu.map(item => {
-			const menuLink = getElement('a', ['menu-link']);
-			menuLink.textContent = item.title;
-			menuLink.src = item.link;
+         return menuLink;
+      });
 
-			return menuLink;
-		});
+      menuWrapper.append(...allMenuLink);
+      wrapper.append(menuWrapper);
+   }
 
-		menuWrapper.append(...allMenu);
-		wrapper.append(menuWrapper);
-	}
+   if (param.header.social) {
+      const socialWrapper = getElement('div', ['social']);
+      const allSocial = param.header.social.map((item) => {
+         const socialLink = getElement('a', ['social-link']);
+         socialLink.append(
+            getElement('img', [], {
+               src: item.img,
+               alt: item.title,
+            }),
+         );
 
-	if(param.header.social) {
-		const socialWrapper = getElement('div', ['social']);
-		const allSocial = param.header.social.map(item => {
-			const socialLink = getElement('a', ['social-link']);
-			socialLink.append(getElement('img', [], {
-				src: item.img,
-				alt: item.title,
-			}));
+         socialLink.href = item.link;
 
-			socialLink.href = item.link;
+         return socialLink;
+      });
+      socialWrapper.append(...allSocial);
+      wrapper.append(socialWrapper);
+   }
 
-			return socialLink;
-		});
-		socialWrapper.append(...allSocial);
-		wrapper.append(socialWrapper);
-	}
+   header.append(container);
+   container.append(wrapper);
+   return header;
+};
 
-	header.append(container);
-	container.append(wrapper);
-	return header;
-}
+const createMain = ({ title, main: { genre, rating, description, trailer } }) => {
+   const main = getElement('main');
+   const container = getElement('div', ['container']);
+   main.append(container);
+   const wrapper = getElement('div', ['main-content']);
+   container.append(wrapper);
+   const content = getElement('div', ['content']);
+   wrapper.append(content);
 
-const addPageTitle = (param) => {
-	const pageTitle = document.querySelector('title');
-	console.log(pageTitle);
-	pageTitle.textContent = param.pageTitle;
-}
+   if (genre) {
+      const ganreSpan = getElement('span', ['genre', 'animated', 'fadeInRight'], {
+         textContent: genre,
+      });
+      content.append(ganreSpan);
+   }
+
+   if (rating) {
+      const ratingBlock = getElement('div', ['rating', 'animated', 'fadeInRight']);
+      const ratingStars = getElement('div', ['rating-stars']);
+      const ratingNumber = getElement('div', ['rating-number'], { textContent: `${rating} / 10` });
+
+      for (let i = 0; i < 10; i++) {
+         const star = getElement('img', ['star'], {
+            alt: i ? '' : `Рейтинг ${rating} из 10`,
+            src: i < rating ? 'img/star.svg' : 'img/star-o.svg',
+         });
+         ratingStars.append(star);
+      }
+
+      ratingBlock.append(ratingStars, ratingNumber);
+      content.append(ratingBlock);
+   }
+
+   content.append(
+      getElement('h1', ['main-title', 'animated', 'fadeInRight'], { textContent: title }),
+   );
+   content.append(
+      getElement('p', ['main-description', 'animated', 'fadeInRight'], {
+         textContent: description,
+      }),
+   );
+
+   if (trailer) {
+      const youtubeLink = getElement('a', ['button', 'animated', 'fadeInRight', 'youtube-modal'], {
+         textContent: 'Смотреть трейлер',
+         href: trailer,
+      });
+      const youtubeImgLink = getElement('a', ['play', 'youtube-modal'], {href: trailer, ariaLabel: 'Смотреть трейлер'});
+		const iconPlay = getElement('img', ['play-img'], {
+			src: 'img/play.svg',
+			alt: '',
+			ariaHidden: true,}
+		);
+
+      content.append(youtubeLink);
+		youtubeImgLink.append(iconPlay);
+		wrapper.append(youtubeImgLink);
+   }
+
+   return main;
+};
 
 const movieConstructor = (selector, options) => {
-	const app = document.querySelector(selector);
-	app.classList.add('body-app');
+   const app = document.querySelector(selector);
+   app.classList.add('body-app');
 
-	if (options.header) {
-		app.append(createHeader(options));
-	}
+   app.style.backgroundImage = options.background ? `url('${options.background}')` : '';
 
-	if (options.pageTitle) {
-		addPageTitle(options);
-	}
+   document.title = options.title;
 
+   if (options.header) {
+      app.append(createHeader(options));
+   }
+
+   if (options.main) {
+      app.append(createMain(options));
+   }
 };
 
 movieConstructor('.app', {
-	title: 'Ведьмак',
-	header: {
-		logo: 'witcher/logo.png',
-		social: [
-			{
-				title: 'Twitter',
-				link: 'https://twitter.com',
-				img: 'witcher/social/twitter.svg',
-			},
-			{
-				title: 'Instagram',
-				link: 'https://instagram.com',
-				img: 'witcher/social/instagram.svg',
-			},
-			{
-				title: 'facebook',
-				link: 'https://facebook.com',
-				img: 'witcher/social/facebook.svg',
-			}
-		],
-		menu: [
-			{
-				title: 'Описание',
-				link: '#',
-			},
-			{
-				title: 'Трейлер',
-				link: '#',
-			},
-			{
-				title: 'Отзывы',
-				link: '#',
-			},
-		],
-	},
-	pageTitle: 'Ведьмаку заплатите чеканой монетой',
+   title: 'Ведьмак',
+   background: 'witcher/background.jpg',
+   header: {
+      logo: 'witcher/logo.png',
+      social: [
+         {
+            title: 'Twitter',
+            link: 'https://twitter.com',
+            img: 'witcher/social/twitter.svg',
+         },
+         {
+            title: 'Instagram',
+            link: 'https://instagram.com',
+            img: 'witcher/social/instagram.svg',
+         },
+         {
+            title: 'facebook',
+            link: 'https://facebook.com',
+            img: 'witcher/social/facebook.svg',
+         },
+      ],
+      menu: [
+         {
+            title: 'Описание',
+            link: '#',
+         },
+         {
+            title: 'Трейлер',
+            link: '#',
+         },
+         {
+            title: 'Отзывы',
+            link: '#',
+         },
+      ],
+   },
+   main: {
+      genre: '2019,фэнтези',
+      rating: '8',
+      description: `Ведьмак Геральт, мутант и убийца чудовищ, на своей верной лошади по кличке Плотва путешествует по Континенту. За тугой
+		мешочек чеканных монет этот мужчина избавит вас от всякой настырной нечисти — хоть от чудищ болотных, оборотней и даже
+		заколдованных принцесс.`,
+      trailer: 'https://www.youtube.com/watch?v=P0oJqfLzZzQ',
+   },
 });
