@@ -39,22 +39,22 @@ const getElement = (tagName, classNames, attributes) => {
    return element;
 };
 
-const createHeader = (param) => {
+const createHeader = ({ title, header: {logo, menu, social} }) => {
    const header = getElement('header');
    const container = getElement('div', ['container']);
    const wrapper = getElement('div', ['header']);
 
-   if (param.header.logo) {
-      const logo = getElement('img', ['logo'], {
-         src: param.header.logo,
-         alt: 'Логотип ' + param.title,
+   if (logo) {
+      const logotype = getElement('img', ['logo'], {
+         src: logo,
+         alt: 'Логотип ' + title,
       });
-      wrapper.append(logo);
+      wrapper.append(logotype);
    }
 
-   if (param.header.menu) {
+   if (menu) {
       const menuWrapper = getElement('nav', ['menu-list']);
-      const allMenuLink = param.header.menu.map((item) => {
+      const allMenuLink = menu.map((item) => {
          const menuLink = getElement('a', ['menu-link']);
          menuLink.textContent = item.title;
          menuLink.href = item.link;
@@ -64,11 +64,18 @@ const createHeader = (param) => {
 
       menuWrapper.append(...allMenuLink);
       wrapper.append(menuWrapper);
+
+		const menuBtn = getElement('button', ['menu-button']);
+		menuBtn.addEventListener('click', () => {
+			menuBtn.classList.toggle('menu-button-active');
+			wrapper.classList.toggle('header-active');
+		})
+		container.append(menuBtn);
    }
 
-   if (param.header.social) {
+   if (social) {
       const socialWrapper = getElement('div', ['social']);
-      const allSocial = param.header.social.map((item) => {
+      const allSocial = social.map((item) => {
          const socialLink = getElement('a', ['social-link']);
          socialLink.append(
             getElement('img', [], {
@@ -86,11 +93,12 @@ const createHeader = (param) => {
    }
 
    header.append(container);
-   container.append(wrapper);
+   container.append(wrapper)
+	
    return header;
 };
 
-const createMain = ({ title, main: { genre, rating, description, trailer } }) => {
+const createMain = ({ title, main: { genre, rating, description, trailer, slider } }) => {
    const main = getElement('main');
    const container = getElement('div', ['container']);
    main.append(container);
@@ -149,12 +157,115 @@ const createMain = ({ title, main: { genre, rating, description, trailer } }) =>
 		wrapper.append(youtubeImgLink);
    }
 
+	if (slider) {
+		const sliderBlock = getElement('div', ['series']);
+		const swiperBlock = getElement('div', ['swiper-container']);
+		const swiperWrapper = getElement('div', ['swiper-wrapper']);
+		const arrow = getElement('button', ['arrow']);
+
+		const sliders = slider.map((item) => {
+			const swiperSlide = getElement('div', ['swiper-slide']);
+			const card = getElement('figure', ['card']);
+			const cardImage = getElement('img', ['card-img'], {
+				src: item.img,
+				alt: ((item.title ? item.title + ' ' : '') + (item.subtitle ? item.subtitle + ' ' : '')).trim(),
+				// alt: ((item.title || '') + " " + (item.subtitle || '')).trim()
+
+			});
+
+			card.append(cardImage);
+
+			if(item.title || item.subtitle) {
+				const cardDescription = getElement('figcaption', ['card-description']);
+				cardDescription.innerHTML = `
+					${item.subtitle ? `<p class="card-subtitle">"${item.subtitle}"</p>` : ''};
+					${item.title ? `<p class="card-title">${item.title}</p>` : ''};
+				`;
+
+				card.append(cardDescription);
+			}
+
+			swiperSlide.append(card);
+			return swiperSlide;
+		});
+
+		swiperWrapper.append(...sliders);
+		swiperBlock.append(swiperWrapper);
+		sliderBlock.append(swiperBlock, arrow);
+
+		container.append(sliderBlock);
+
+		new Swiper(swiperBlock, {
+			loop: true,
+			navigation: {
+				nextEl: arrow,
+			},
+			breakpoints: {
+				320: {
+					slidesPerView: 1,
+					spaceBetween: 20
+				},
+				541: {
+					slidesPerView: 2,
+					spaceBetween: 40
+				}
+			}
+		});
+	}
+
    return main;
+};
+
+const createFooter = ({ footer: {copyright, footerMenu} }) => {
+   const footer = getElement('footer', ['footer']);
+   const container = getElement('div', ['container']);
+   const footerWrapper = getElement('div', ['footer-content']);
+   const leftContent = getElement('div', ['left']);
+   const rightContent = getElement('div', ['right']);
+
+   if (footerMenu) {
+      const menuFooter = getElement('nav', ['footer-menu']);
+      const footerMenuLinks = footerMenu.map((item) => {
+         const menuLink = getElement('a', ['footer-link']);
+         menuLink.textContent = item.title;
+         menuLink.href = item.href;
+
+         return menuLink;
+      });
+
+      menuFooter.append(...footerMenuLinks);
+      rightContent.append(menuFooter);
+   }
+	leftContent.append(getElement('span', ['copyright'], {textContent: copyright}));
+	footerWrapper.append(leftContent, rightContent);
+   container.append(footerWrapper);
+   footer.append(container);
+	
+   return footer;
 };
 
 const movieConstructor = (selector, options) => {
    const app = document.querySelector(selector);
    app.classList.add('body-app');
+
+	app.style.color = options.fontColor || '';
+	app.style.backgroundColor = options.backgroundColor || '';
+
+	if(options.subColor) {
+		document.documentElement.style.setProperty('--sub-color', options.subColor);
+	}
+
+	if (options.favicon) {
+		const index = options.favicon.lastIndexOf('.');
+		const type = options.favicon.substring(index + 1);
+		const favicon = getElement('link', null, {
+			rel: 'icon',
+			href: options.favicon, 
+			type: 'image/' + (type === 'svg' ? 'svg-xml' : type)
+		});
+
+		document.head.append(favicon);
+	}
 
    app.style.backgroundImage = options.background ? `url('${options.background}')` : '';
 
@@ -167,11 +278,20 @@ const movieConstructor = (selector, options) => {
    if (options.main) {
       app.append(createMain(options));
    }
+
+	if (options.footer) {
+      app.append(createFooter(options));
+   }
+
 };
 
 movieConstructor('.app', {
    title: 'Ведьмак',
    background: 'witcher/background.jpg',
+	favicon: 'witcher/logo.png',
+	fontColor: '#fff',
+	backgroundColor: '#141218',
+	subColor: '#9D2929',
    header: {
       logo: 'witcher/logo.png',
       social: [
@@ -213,5 +333,102 @@ movieConstructor('.app', {
 		мешочек чеканных монет этот мужчина избавит вас от всякой настырной нечисти — хоть от чудищ болотных, оборотней и даже
 		заколдованных принцесс.`,
       trailer: 'https://www.youtube.com/watch?v=P0oJqfLzZzQ',
+		slider: [
+			{
+				img: 'witcher/series/series-1.jpg',
+				title: 'Начало конца',
+				subtitle: 'Серия №1',
+			},
+			{
+				img: 'witcher/series/series-2.jpg',
+				title: 'Четыре марки',
+				subtitle: 'Серия №2',
+			},
+			{
+				img: 'witcher/series/series-3.jpg',
+				title: 'Предательская луна',
+				subtitle: 'Серия №3',
+			},
+			{
+				img: 'witcher/series/series-4.jpg',
+				title: 'Банкеты, ублюдки и похороны',
+				subtitle: 'Серия №4',
+			},
+		]
    },
+	footer: {
+		copyright: '© 2020 The Witcher. All right reserved.',
+		footerMenu: [
+			{
+				title: 'Privacy Policy',
+				href: '#',
+			},
+			{
+				title: 'Terms of Service',
+				href: '#',
+			},
+			{
+				title: 'Legal',
+				href: '#',
+			},
+		]
+
+	}
 });
+
+
+
+
+// Функция декларирования
+// const arr = [
+// 	{
+// 		name: 'Петр',
+// 		gender: 'men',
+// 	},
+// 	{
+// 		name: 'Алла',
+// 		gender: 'women',
+// 	},
+// 	{
+// 		name: 'Жора',
+// 		gender: 'men',
+// 	},
+// ]
+
+// const decoration = (obj) => {
+// 	if(obj.gender === 'men') {
+// 		return Object.assign({}, obj, {work: 'factory'});
+// 	}
+// 	return obj;
+// }
+
+// const newArr = arr.map(decoration);
+
+// console.log(newArr);
+
+
+
+
+// const wrapper = (fn) => {
+// 	const cache = [];
+// 	return (...args) => {
+
+// 		const result = fn(...args);
+// 		cache.push({
+// 			[fn.name + JSON.stringify(args)]: result,
+// 		});
+
+// 		console.log(cache);
+
+// 		return result;
+// 	}
+// }
+
+// const multy = (a, b) => a ** b;
+
+// const multyWrapper = wrapper(multy);
+
+// console.log(multyWrapper(2, 5));
+// console.log(multyWrapper(5, 7));
+// console.log(multyWrapper(11, 4));
+// console.log(multyWrapper(9, 12));
